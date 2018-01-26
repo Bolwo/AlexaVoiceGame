@@ -55,7 +55,9 @@ def get_welcome_response():
         }
     }
     card_title = "Ship"
-    speech_output = str(p.room.description) + ". In the corner you see " + str(p.room.items.name)
+    speech_output = str(p.room.description) + ". In the corner you see "
+    for i in p.room.items:
+        speech_output += i.name
     reprompt_text = "I didn't get that."
     should_end_session = False
     return build_response(session_attributes, build_speechlet_response(
