@@ -28,26 +28,26 @@ def on_intent(intent_request, session):
     intent_name = intent_request["intent"]["name"]
     
     if intent_name == "StartGame":
-        return startgame()
+        return startgame(session)
     if intent_name == "EndGame":
-        return endgame()
+        return endgame(session)
     if intent_name == "SaveGame":
-        return savegame()
+        return savegame(session)
     if intent_name == "Move":
         return move(session)
     if intent_name == "Pickup":
-        return pickup()
+        return pickup(session)
     if intent_name == "Inventory":
-        return inventory()
+        return inventory(session)
     if intent_name == "Description":
-        return description()
+        return description(session)
     else:
         raise ValueError("Invalid intent")
 
 
 
 def get_welcome_response():
-    p = Player.Player("Welcome room", ['exampleroomitem'], ['exampletestplayeritem'])
+    p = Player.Player("Welcome room", ['exampleroomitem'], [])
     card_title = "Ship"
     speech_output = str(p.room.description) + ". In the corner you see "
     for i in p.room.items:
@@ -87,64 +87,71 @@ def move(session):
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
      
-def pickup():
+def pickup(session):
+    #p = Player.Player("Welcome room", ['exampleroomitem'], ['exampleplayeritem'])
+    p = Player.Player(session['attributes']['RoomDescription'], session['attributes']['RoomItems'], session['attributes']['PlayerItems'])
     p.pickup()
-    session_attributes = {}
     card_title = "pickup"
     speech_output = "You picked up the items"
     reprompt_text = "I didn't get that."
     should_end_session = False
+    session_attributes = save_session(p)
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
      
-def inventory():
-    session_attributes = {}
+def inventory(session):
+    p = Player.Player(session['attributes']['RoomDescription'], session['attributes']['RoomItems'], session['attributes']['PlayerItems'])
     card_title = "pickup"
     speech_output = "In your inventory you have "
     for i in p.items:
         speech_output += i.name + ", "
     reprompt_text = "I didn't get that."
     should_end_session = False
+    session_attributes = save_session(p)
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
     
-def endgame():
-    session_attributes = {}
+def endgame(session):
+    p = Player.Player(session['attributes']['RoomDescription'], session['attributes']['RoomItems'], session['attributes']['PlayerItems'])
     card_title = "end"
     speech_output = "Game ended"
     reprompt_text = "I didn't get that."
     should_end_session = True
+    session_attributes = save_session(p)
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
         
-def savegame():
-    session_attributes = {}
+def savegame(session):
+    p = Player.Player(session['attributes']['RoomDescription'], session['attributes']['RoomItems'], session['attributes']['PlayerItems'])
     card_title = "save"
     speech_output = "Game saved. (not really though as I am not able to do that yet)"
     reprompt_text = "I didn't get that."
     should_end_session = False
+    session_attributes = save_session(p)
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
         
-def description():
-    session_attributes = {}
+def description(session):
+    p = Player.Player(session['attributes']['RoomDescription'], session['attributes']['RoomItems'], session['attributes']['PlayerItems'])
     card_title = "description"
     speech_output = "The room is " + str(p.room.description) + ". In the corner you see "
     for i in p.room.items:
         speech_output += i.name
     reprompt_text = "I didn't get that."
     should_end_session = False
+    session_attributes = save_session(p)
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
         
-def help():
-    session_attributes = {}
+def help(session):
+    p = Player.Player(session['attributes']['RoomDescription'], session['attributes']['RoomItems'], session['attributes']['PlayerItems'])
     card_title = "help"
     speech_output = "To control the ship, the commands are help, move, pickup, description, save game, start game, end game"
     for i in p.room.items:
         speech_output += i.name
     reprompt_text = "I didn't get that."
     should_end_session = False
+    session_attributes = save_session(p)
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
         
@@ -176,8 +183,16 @@ def build_response(session_attributes, speechlet_response):
     }
     
 def save_session(p):
+    playeritems = []
+    for i in p.items:
+        playeritems.append(i.name)
+        
+    roomitems = []
+    for i in p.room.items:
+        roomitems.append(i.name)
+        
     session_attributes = {"RoomDescription": p.room.description,
-        "RoomItems": json.dumps(p.room.items, default=lambda x: x.name),
-        "PlayerItems": json.dumps(p.items, default=lambda x: x.name)
+        "RoomItems": roomitems,
+        "PlayerItems": playeritems
     }
     return session_attributes
