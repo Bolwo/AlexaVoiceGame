@@ -34,7 +34,7 @@ def on_intent(intent_request, session):
     if intent_name == "SaveGame":
         return savegame()
     if intent_name == "Move":
-        return move()
+        return move(session)
     if intent_name == "Pickup":
         return pickup()
     if intent_name == "Inventory":
@@ -44,22 +44,20 @@ def on_intent(intent_request, session):
     else:
         raise ValueError("Invalid intent")
 
-p = Player.Player()
+
 
 def get_welcome_response():
-    p = Player.Player()
-    session_attributes = {"Player": "Jaco",
-        "Inventory": {
-            "1": "Spoon",
-            "2": "Rake"
-        }
-    }
+    p = Player.Player("Welcome room", ['exampleroomitem'], ['exampletestplayeritem'])
     card_title = "Ship"
     speech_output = str(p.room.description) + ". In the corner you see "
     for i in p.room.items:
         speech_output += i.name
     reprompt_text = "I didn't get that."
     should_end_session = False
+    session_attributes = {"RoomDescription": p.room.description,
+        "RoomItems": json.dumps(p.room.items, default=lambda x: x.name),
+        "PlayerItems": json.dumps(p.items, default=lambda x: x.name)
+    }
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
         
@@ -74,7 +72,9 @@ def startgame():
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
 
-def move():
+def move(session):
+    p = Player.Player(session['attributes']['RoomDescription'], session['attributes']['RoomItems'], session['attributes']['PlayerItems'])
+    #p = Player.Player('testroom', ["testroomitem"], ['testplayeritem'])
     p.move()
     session_attributes = {}
     card_title = "move"
@@ -83,6 +83,7 @@ def move():
         speech_output += i.name
     reprompt_text = "I didn't get that."
     should_end_session = False
+    session_attributes = save_session(p)
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
      
@@ -174,3 +175,9 @@ def build_response(session_attributes, speechlet_response):
         "response": speechlet_response
     }
     
+def save_session(p):
+    session_attributes = {"RoomDescription": p.room.description,
+        "RoomItems": json.dumps(p.room.items, default=lambda x: x.name),
+        "PlayerItems": json.dumps(p.items, default=lambda x: x.name)
+    }
+    return session_attributes
